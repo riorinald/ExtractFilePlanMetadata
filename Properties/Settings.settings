@@ -1,0 +1,123 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<SettingsFile xmlns="http://schemas.microsoft.com/VisualStudio/2004/01/settings" CurrentProfile="(Default)" GeneratedClassNamespace="DownloadFilePlan.Properties" GeneratedClassName="Settings">
+  <Profiles />
+  <Settings>
+    <Setting Name="Download" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="DoEncrypt" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="LogEvery" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1000</Value>
+    </Setting>
+    <Setting Name="RefreshAuthTokenEveryXMinutes" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">3</Value>
+    </Setting>
+    <Setting Name="Setting" Type="System.String" Scope="User">
+      <Value Profile="(Default)" />
+    </Setting>
+    <Setting Name="MaxThreads" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">1</Value>
+    </Setting>
+    <Setting Name="CsvOutput" Type="System.String" Scope="User">
+      <Value Profile="(Default)">D:\zWork\Export\Reports</Value>
+    </Setting>
+    <Setting Name="FilesOutput" Type="System.String" Scope="User">
+      <Value Profile="(Default)">D:\zWork\Export\Downloaded_Items</Value>
+    </Setting>
+    <Setting Name="ValuesToRetrieve" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Permissions,Categories</Value>
+    </Setting>
+    <Setting Name="MaxItemsPerFolder" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">5000</Value>
+    </Setting>
+    <Setting Name="BlockedExtensions" Type="System.String" Scope="User">
+      <Value Profile="(Default)">.files, _files, -Dateien, _fichiers, _bestanden, _file, _archivost, -filer, _tiedostot, _pliki, _soubory, _elemei, _ficheiros, _arquivos, _dosyalar, _datoteke, _fitxers, _failid, _fails, _bylos, _fajlovi, _fitxategiak</Value>
+    </Setting>
+    <Setting Name="ZipPassword" Type="System.String" Scope="User">
+      <Value Profile="(Default)">P@ssw0rd</Value>
+    </Setting>
+    <Setting Name="AES_key" Type="System.String" Scope="User">
+      <Value Profile="(Default)">./AES.key</Value>
+    </Setting>
+    <Setting Name="OTCS_Secret" Type="System.String" Scope="User">
+      <Value Profile="(Default)">P@ssw0rd</Value>
+    </Setting>
+    <Setting Name="OTCS_Username" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Admin</Value>
+    </Setting>
+    <Setting Name="SecureOTCSPassword_FileName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">otcs_password</Value>
+    </Setting>
+    <Setting Name="SecureOTCSUsername_FileName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">otcs_username</Value>
+    </Setting>
+    <Setting Name="UseSecureCredentials" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="DB_Secret" Type="System.String" Scope="User">
+      <Value Profile="(Default)">P@ssw0rd</Value>
+    </Setting>
+    <Setting Name="DB_Username" Type="System.String" Scope="User">
+      <Value Profile="(Default)">sa</Value>
+    </Setting>
+    <Setting Name="SecureCSDBSecret_Filename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">csdb_secret</Value>
+    </Setting>
+    <Setting Name="SecureCSDBUsername_Filename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">csdb_username</Value>
+    </Setting>
+    <Setting Name="SecureAESKey_Filename" Type="System.String" Scope="User">
+      <Value Profile="(Default)">AES.key</Value>
+    </Setting>
+    <Setting Name="PathMinLength" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">243</Value>
+    </Setting>
+    <Setting Name="PathMaxLength" Type="System.Int32" Scope="User">
+      <Value Profile="(Default)">400</Value>
+    </Setting>
+    <Setting Name="BlockedStartWith" Type="System.String" Scope="User">
+      <Value Profile="(Default)">_vti_</Value>
+    </Setting>
+    <Setting Name="LongFilePathLocation" Type="System.String" Scope="User">
+      <Value Profile="(Default)">D:\t</Value>
+    </Setting>
+    <Setting Name="DestPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">site/swiftx/</Value>
+    </Setting>
+    <Setting Name="UsingContainsLogic" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+    <Setting Name="SPOLongFilePathLocation" Type="System.String" Scope="User">
+      <Value Profile="(Default)">D:\l</Value>
+    </Setting>
+    <Setting Name="TargetedNode" Type="System.Int64" Scope="User">
+      <Value Profile="(Default)">4707</Value>
+    </Setting>
+    <Setting Name="DBSource" Type="System.String" Scope="User">
+      <Value Profile="(Default)">192.168.1.51</Value>
+    </Setting>
+    <Setting Name="APIUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://192.168.1.51/otcs/llisapi.dll/api/</Value>
+    </Setting>
+    <Setting Name="DBCatalog" Type="System.String" Scope="User">
+      <Value Profile="(Default)">OTCS</Value>
+    </Setting>
+    <Setting Name="OTDSApiURL" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://192.168.1.51:8080/otdsws/rest/</Value>
+    </Setting>
+    <Setting Name="SourceUrl" Type="System.String" Scope="User">
+      <Value Profile="(Default)">http://192.168.1.51/otcs/cs.exe/app/nodes/{0}</Value>
+    </Setting>
+    <Setting Name="SecureCredentialsPath" Type="System.String" Scope="User">
+      <Value Profile="(Default)">C:\Users\RGTX\Documents\DownloadFilePlan-ExtractCategory-Faay\credentials</Value>
+    </Setting>
+    <Setting Name="SharePointURL" Type="System.String" Scope="User">
+      <Value Profile="(Default)">/sites/ssg-test/</Value>
+    </Setting>
+    <Setting Name="ExtractTargetedNode" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">True</Value>
+    </Setting>
+  </Settings>
+</SettingsFile>
