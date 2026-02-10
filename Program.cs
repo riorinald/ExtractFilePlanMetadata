@@ -2730,7 +2730,7 @@ namespace DownloadFilePlan
 
             try
             {
-                var provider = new RSACryptoServiceProvider(cspParams);
+                var provider = new RSACryptoServiceProvider(2048, cspParams);
             }
             catch (Exception e)
             {
@@ -3084,7 +3084,7 @@ namespace DownloadFilePlan
             var fileE = new FileInfo(Path.Combine(file.DirectoryName, Path.GetFileNameWithoutExtension(file.Name)));
             var transform = aes.CreateEncryptor();
 
-            var keyEncrypted = rsa.Encrypt(aes.Key, false);
+            var keyEncrypted = rsa.Encrypt(aes.Key, true);
 
             byte[] LenK = new byte[4];
             byte[] LenIV = new byte[4];
@@ -3133,7 +3133,7 @@ namespace DownloadFilePlan
             var fileE = new FileInfo(Path.Combine(file.DirectoryName, sha256_hash(file.Name)));
             var transform = aes.CreateEncryptor();
 
-            var keyEncrypted = rsa.Encrypt(aes.Key, false);
+            var keyEncrypted = rsa.Encrypt(aes.Key, true);
 
             byte[] LenK = new byte[4];
             byte[] LenIV = new byte[4];
