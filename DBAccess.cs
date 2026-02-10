@@ -66,13 +66,14 @@ namespace DownloadFilePlan
         {
             string connectionString = GetConnectionString();
             long nodeId = Properties.Settings.Default.TargetedNode;
-            string query = $"SELECT dbo.fn_llpathwsg({nodeId}) AS 'Path'";
+            string query = "SELECT dbo.fn_llpathwsg(@NodeId) AS 'Path'";
             string value = "";
             try
             {
                 using (SqlConnection connection = new SqlConnection(connectionString))
                 {
                     SqlCommand cmd = new SqlCommand(query, connection);
+                    cmd.Parameters.Add(new SqlParameter("@NodeId", nodeId));
                     connection.Open();
 
                     SqlDataReader reader = cmd.ExecuteReader();
@@ -505,60 +506,76 @@ namespace DownloadFilePlan
             return ExtractCategoriesIntoString(row);
         }
 
-        private static KeyValuePair<int, string> ExtractCategoriesIntoString(DataRow row) {
+        private static KeyValuePair<int, string> ExtractCategoriesIntoString(DataRow row)
+        {
             var key = 0;
             var value = "";
-            long attrType = long.Parse(row["AttrType"].ToString());
 
             try
             {
                 key = Convert.ToInt32(row["AttrID"].ToString());
+                long attrType = long.Parse(row["AttrType"].ToString());
+                value = GetCategoryValue(row, attrType);
+            }
+            catch (Exception) { }
 
-                if (attrType == -18)
+            return new KeyValuePair<int, string>(key, value);
+        }
+
+        private static string GetCategoryValue(DataRow row, long attrType)
+        {
+            if (attrType == -18)
+            {
+                return GetSafeString(row, "Cat");
+            }
+
+            string attrName = GetSafeString(row, "AttrName");
+            if (string.IsNullOrEmpty(attrName))
+            {
+                return "";
+            }
+
+            string catValue = GetSafeString(row, "Cat");
+            if (attrType == 14)
+            {
+                catValue = GetUserCategoryValue(catValue);
+            }
+
+            return attrName + ":" + catValue;
+        }
+
+        private static string GetUserCategoryValue(string catId)
+        {
+            if (string.IsNullOrEmpty(catId)) return "";
+            
+            try 
+            {
+                var user = users[Convert.ToInt32(catId)];
+                string cat = "";
+                if (!String.IsNullOrWhiteSpace(user.Name))
                 {
-                    var cat = "";
-
-                    if (!String.IsNullOrEmpty(cat = (row["Cat"].GetType() == typeof(DBNull) ? "" : row["Cat"].ToString())))
+                    cat = user.Name;
+                }
+                else if (!String.IsNullOrWhiteSpace(user.FirstName))
+                {
+                    cat = user.FirstName;
+                    if (!String.IsNullOrWhiteSpace(user.LastName))
                     {
-                        value = cat;
-                    }
-                    else
-                    {
-                        value = "";
+                        cat += user.LastName;
                     }
                 }
-                else if (!String.IsNullOrEmpty((row["AttrName"].GetType() == typeof(DBNull) ? "" : row["AttrName"].ToString())))
-                {
-                    var cat = (row["Cat"].GetType() == typeof(DBNull) ? "" : row["Cat"].ToString());
-                    value = (row["AttrName"].GetType() == typeof(DBNull) ? "" : row["AttrName"].ToString()) + ":";
-                    if (attrType == 14)
-                    {
-                        var user = users[Convert.ToInt32(cat)];
-                        cat = "";
-                        if (!String.IsNullOrWhiteSpace(user.Name))
-                        {
-                            cat = user.Name;
-                        }
-                        else if (!String.IsNullOrWhiteSpace(user.FirstName))
-                        {
-                            cat = user.FirstName;
-                            if (!String.IsNullOrWhiteSpace(user.LastName))
-                            {
-                                cat += user.LastName;
-                            }
-                        }   
-                    }
+                return cat;
+            }
+            catch
+            {
+                return "";
+            }
+        }
 
-                    value += cat;
-                }
-                else
-                {
-                    value = "";
-                }
-                } catch(Exception) { }
-
-            var kvp = new KeyValuePair<int, string>(key, value);
-            return kvp;
+        private static string GetSafeString(DataRow row, string columnName)
+        {
+            if (row[columnName].GetType() == typeof(DBNull)) return "";
+            return row[columnName].ToString();
         }
         public static void parse(long root, List<CustomNode> allNodes, ref Dictionary<int, List<CustomNode>> dictionary, int level)
         {

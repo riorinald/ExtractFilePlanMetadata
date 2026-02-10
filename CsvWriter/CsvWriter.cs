@@ -105,84 +105,91 @@ namespace DownloadFilePlan
         public static void ToCSV(DataTable dtDataTable, string strFilePath)
         {
             dtDataTable = StripEmptyRows(dtDataTable);
+            RemoveExcludedColumns(dtDataTable);
 
+            using (StreamWriter sw = new StreamWriter(strFilePath, false))
+            {
+                try
+                {
+                    WriteHeaders(sw, dtDataTable);
+                    WriteRows(sw, dtDataTable);
+                }
+                catch
+                {
+                    Trace.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "|Error Saving to CSV");
+                }
+            }
+        }
+
+        private static void RemoveExcludedColumns(DataTable dt)
+        {
             string[] valuesToRetrieve = Properties.Settings.Default.ValuesToRetrieve.Split(',');
 
             if (!valuesToRetrieve.Contains("Permissions"))
             {
-                string[] rowsToRemove = new string[] { "Owner", "OwnerGroup", "ACL", "See", "See Contents", "Modify", "Edit Attributes", "Add Items", "Reserve", "Delete Versions", "Delete", "Edit Permission" };
-                
-                foreach(string rowToRemove in rowsToRemove)
-                {
-                    if (dtDataTable.Columns.Contains(rowToRemove))
-                    {
-                        dtDataTable.Columns.Remove(rowToRemove);
-                    }
-                }
+                RemoveColumns(dt, new[] { "Owner", "OwnerGroup", "ACL", "See", "See Contents", "Modify", "Edit Attributes", "Add Items", "Reserve", "Delete Versions", "Delete", "Edit Permission" });
             }
 
             if (!valuesToRetrieve.Contains("Attributes"))
             {
-                string[] rowsToRemove = new string[] { "Category Header", "Category Values" };
-                foreach (string rowToRemove in rowsToRemove) { 
-                    if (dtDataTable.Columns.Contains(rowToRemove))
-                    {
-                        dtDataTable.Columns.Remove(rowToRemove);
-                    }
+                RemoveColumns(dt, new[] { "Category Header", "Category Values" });
+            }
+        }
+
+        private static void RemoveColumns(DataTable dt, string[] columns)
+        {
+            foreach (string col in columns)
+            {
+                if (dt.Columns.Contains(col))
+                {
+                    dt.Columns.Remove(col);
                 }
             }
+        }
 
-            StreamWriter sw = new StreamWriter(strFilePath, false);
-            try
+        private static void WriteHeaders(StreamWriter sw, DataTable dt)
+        {
+            for (int i = 0; i < dt.Columns.Count; i++)
             {
-                //headers  
-                for (int i = 0; i < dtDataTable.Columns.Count; i++)
+                sw.Write(dt.Columns[i]);
+                if (i < dt.Columns.Count - 1)
                 {
-                    sw.Write(dtDataTable.Columns[i]);
-                    if (i < dtDataTable.Columns.Count - 1)
+                    sw.Write(",");
+                }
+            }
+            sw.Write(sw.NewLine);
+        }
+
+        private static void WriteRows(StreamWriter sw, DataTable dt)
+        {
+            foreach (DataRow dr in dt.Rows)
+            {
+                for (int i = 0; i < dt.Columns.Count; i++)
+                {
+                    if (!Convert.IsDBNull(dr[i]))
+                    {
+                        sw.Write(FormatCsvValue(dr[i].ToString()));
+                    }
+                    if (i < dt.Columns.Count - 1)
                     {
                         sw.Write(",");
                     }
                 }
                 sw.Write(sw.NewLine);
-                foreach (DataRow dr in dtDataTable.Rows)
-                {
-                    for (int i = 0; i < dtDataTable.Columns.Count; i++)
-                    {
-                        if (!Convert.IsDBNull(dr[i]))
-                        {
-                            string value = dr[i].ToString();
-                            if (value.Contains(','))
-                            {
-                                value = value.Replace(',', '﹐');
-                                sw.Write(value);
-                            }
-                            else if (value.Contains('"'))
-                            {
-                                value = String.Format("\"\"{0}\"\"", value);
-                                sw.Write(value);
-                            }
-                            else
-                            {
-                                sw.Write(dr[i].ToString());
-                            }
-                        }
-                        if (i < dtDataTable.Columns.Count - 1)
-                        {
-                            sw.Write(",");
-                        }
-                    }
-                    sw.Write(sw.NewLine);
-                }
             }
-            catch
+        }
+
+        private static string FormatCsvValue(string value)
+        {
+            if (value.Contains(','))
             {
-                Trace.WriteLine(DateTime.Now.ToString("HH:mm:ss") + "|Error Saving to CSV");
+                return value.Replace(',', '﹐');
             }
-            finally
+            else if (value.Contains('"'))
             {
-                sw.Close();
+                return String.Format("\"\"{0}\"\"", value);
             }
+            return value;
         } 
     }
 }
