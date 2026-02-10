@@ -1,5 +1,5 @@
 - name: Restore NuGet packages
-  run: dotnet restore
+  run: nuget restore
   shell: powershell
 
 - name: Build and analyze
@@ -8,5 +8,5 @@
   shell: powershell
   run: |
     ${{ runner.temp }}\scanner\dotnet-sonarscanner begin /k:"riorinald_ExtractFilePlanMetadata" /o:"riorinald" /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-    dotnet build
+    msbuild /t:Rebuild
     ${{ runner.temp }}\scanner\dotnet-sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
