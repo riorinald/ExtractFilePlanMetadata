@@ -48,7 +48,7 @@ namespace DownloadFilePlan
             string currentPath = BaseFilePath;
             for (int i = 0; i < pathParts.Length; i++)
             {
-                var otcsPath = CleanFilePath(pathParts[i]);
+                var otcsPath = CleanPathSegment(pathParts[i]);
                 currentPath = Path.Combine(currentPath, otcsPath);
             }
             var uniqueInfo = GetUniqueFilePath(currentPath);
@@ -240,16 +240,18 @@ namespace DownloadFilePlan
         }
         private static string CleanFileName(string fileName)
         {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return string.Empty;
+
             // Get the last dot position to preserve extension
             int lastDotIndex = fileName.LastIndexOf('.');
             string nameWithoutExtension = lastDotIndex >= 0 ? fileName.Substring(0, lastDotIndex) : fileName;
             string extension = lastDotIndex >= 0 ? fileName.Substring(lastDotIndex) : "";
 
-            // Pattern excludes the dot
+            // Replace illegal characters including slashes with underscore
             string pattern = @"[~#%&*{}\\\/:,<>?\|\""']";
             Regex regex = new Regex(pattern);
 
-            // Clean only the filename part and then combine with extension
             return regex.Replace(nameWithoutExtension, "_") + extension;
         }
         private static (string filePath, bool isDuplicate) GetUniqueFilePath(string filePath)
@@ -280,77 +282,41 @@ namespace DownloadFilePlan
             // Replace illegal characters with underscore
             return regex.Replace(filePath, "_");
         }
+        public static string CleanPathSegment(string segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment))
+                return string.Empty;
+
+            string normalized = segment.Replace('\\', '_').Replace('/', '_');
+            return CleanFilePath(normalized);
+        }
         public static string[] SplitPath(string path)
         {
-            var result = new List<string>();
-            int startIndex = 0;
-            bool inBrackets = false;
+            if (string.IsNullOrWhiteSpace(path))
+                return new string[0];
 
-            for (int i = 0; i < path.Length; i++)
+            // OTCS path from fn_llpathwsg uses '>' as separator.
+            // Only treat '>' as a separator when the path does NOT already use '\\'.
+            if (path.IndexOf('>') >= 0 && path.IndexOf('\\') < 0)
             {
-                if (path[i] == '<')
-                {
-                    inBrackets = true;
-                    continue;
-                }
-                if (path[i] == '\\')
-                {
-                    if (inBrackets)
-                    {
-                        inBrackets = false;
-                        continue;
-                    }
+                const string placeholderLt = "\uE000";
+                const string placeholderGt = "\uE001";
+                string normalized = path.Replace("<<", placeholderLt).Replace(">>", placeholderGt);
 
-                    // Check if this is a genuine path separator
-                    bool isProbablySeparator = true;
-
-                    // If this '\\' is not at the start or end of the string
-                    if (i > 0 && i < path.Length - 1)
-                    {
-                        // Check for common operators that use '\\'
-                        bool isPartOfOperator = false;
-
-                        // Check for '>=' operator
-                        if (i < path.Length - 1 && path[i + 1] == '=')
-                        {
-                            isPartOfOperator = true;
-                        }
-
-                        // Check for '<>' operator
-                        if (i > 0 && path[i - 1] == '<')
-                        {
-                            isPartOfOperator = true;
-                        }
-
-                        // Look at previous char - if it's whitespace or part of an operator, this might not be a separator
-                        bool hasPreviousContent = i > 0 && !char.IsWhiteSpace(path[i - 1]);
-                        // Look at next char - if it's whitespace or part of an operator, this might not be a separator
-                        bool hasNextContent = i < path.Length - 1 && !char.IsWhiteSpace(path[i + 1]);
-
-                        // A real separator should have content on both sides and not be part of an operator
-                        isProbablySeparator = hasPreviousContent && hasNextContent && !isPartOfOperator;
-                    }
-
-                    if (isProbablySeparator)
-                    {
-                        if (i > startIndex)
-                        {
-                            var segment = path.Substring(startIndex, i - startIndex).Trim();
-                            result.Add(segment);
-                        }
-                        startIndex = i + 1;
-                    }
-                }
+                var segments = normalized.Split(new[] { '>' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .Select(s => s.Replace(placeholderLt, "<<").Replace(placeholderGt, ">>"))
+                    .ToArray();
+                return segments;
             }
 
-            // Add the last part
-            if (startIndex < path.Length)
-            {
-                string finalSegment = path.Substring(startIndex).Trim();
-                result.Add(finalSegment);
-            }
-
-            return result.ToArray();
+            // Original logic for '\\' separators
+            path = path.Replace("/\\", "__");
+            return path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToArray();
         }
         private long GetParentFromPath(string pathPart, long currentParentId)
         {

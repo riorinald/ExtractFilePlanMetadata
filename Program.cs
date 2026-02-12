@@ -485,7 +485,7 @@ namespace DownloadFilePlan
                     var (actualPath, isInputFolder, isSPOLong) = pathHandler.ProcessFolderPath(df);
                     if (!Directory.Exists(actualPath))
                     {
-                        string folderName = CleanFilePath(df.Node.Name);
+                        string folderName = CleanPathSegment(df.Node.Name);
                         var isBlockedStatus = IsBlockedFolder(folderName);
                         if (isBlockedStatus.IsBlocked)
                         {
@@ -648,16 +648,14 @@ namespace DownloadFilePlan
                             csvWriterHelper.WriteRecord(succesLog, "SuccessLogs.csv");
 
                             string baseUrl = Settings.Default.SharePointURL.Trim('/');
-                            string destPath = string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/";
-                            destPath += sanitizePath.Replace('\\', '/').Trim('/');
-                            if (df.Node.DisplayType == "0" || df.Node.DisplayType == "751") 
-                            {
-                                if (!destPath.EndsWith("/")) destPath += "/";
-                            }
+                            string cleanLogPath = sanitizePath.Replace('\\', '/').Trim('/');
+                            string destPath = (string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/") + cleanLogPath;
+                            destPath = destPath.Replace("//", "/").TrimStart('/');
+                            if (!destPath.EndsWith("/")) destPath += "/";
 
                             var sGateData = new SGateData()
                             {
-                                SourcePath = actualPath + (df.Node.DisplayType == "0" || df.Node.DisplayType == "751" ? "\\" : ""),
+                                SourcePath = actualPath.TrimEnd('\\') + "\\",
                                 DestinationPath = destPath,
                                 DRSCreatedBy = df.Node.CreatedBy,
                                 DRSCreatedDate = df.Node.CreationDate.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -730,8 +728,6 @@ namespace DownloadFilePlan
                         // For files, we only create the parent folder structure
                         string[] pathParts = SplitPath(task.Node.Path);
                         string targetDirectory = GetParentFolderPath(pathParts, baseFilePath, db);
-
-                        targetDirectory = CleanFilePath(targetDirectory);
 
                         string fileName = CleanFileName(task.Node.Node.Name);
                         if (string.IsNullOrEmpty(GetFileExtension(fileName)))
@@ -930,15 +926,13 @@ namespace DownloadFilePlan
                             csvWriterHelper.WriteRecord(succesLog, "SuccessLogs.csv");
 
                             string baseUrl = Settings.Default.SharePointURL.Trim('/');
-                            string destPath = string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/";
-                            destPath += sanitizePathForLogs.Replace('\\', '/').Trim('/');
-                            if (!destPath.EndsWith("/")) destPath += "/";
-                            destPath += fileName;
+                            string cleanLogPath = sanitizePathForLogs.Replace('\\', '/').Trim('/');
+                            string destPath = (string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/") + (string.IsNullOrEmpty(cleanLogPath) ? "" : cleanLogPath + "/") + fileName;
+                            destPath = destPath.Replace("//", "/").TrimStart('/');
 
                             var sGateData = new SGateData()
                             {
-                                // Replace '/' with '__' in SourcePath filename for cleaner paths
-                                SourcePath = filePath.Replace('/', '_') + (task.Node.Node.DisplayType == "0" || task.Node.Node.DisplayType == "751" ? "\\" : ""),
+                                SourcePath = filePath,
                                 DestinationPath = destPath,
                                 DRSCreatedBy = task.Node.Node.CreatedBy,
                                 DRSCreatedDate = task.Node.Node.CreationDate.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -1298,7 +1292,7 @@ namespace DownloadFilePlan
                                 Directory.CreateDirectory(actualPath);
                                 Logger.Info($"Created directory: {actualPath}");
                             }
-                            string sanitizePath = df.Path;
+                            string sanitizePath = SanitizePathForLogs(df.Path);
                             if (isInputFolder)
                             {
                                 var inputFileExportException = new InputFileExportException()
@@ -1448,15 +1442,14 @@ namespace DownloadFilePlan
                             csvWriterHelper.WriteRecord(succesLog, "SuccessLogs.csv");
 
                             string baseUrl = Settings.Default.SharePointURL.Trim('/');
-                            string destPath = string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/";
-                            destPath += sanitizePath.Replace('\\', '/').Trim('/');
+                            string cleanLogPath = sanitizePath.Replace('\\', '/').Trim('/');
+                            string destPath = (string.IsNullOrEmpty(baseUrl) ? "" : baseUrl + "/") + cleanLogPath;
+                            destPath = destPath.Replace("//", "/").TrimStart('/');
                             if (!destPath.EndsWith("/")) destPath += "/";
-                            destPath += CleanFileName(df.Node.Name);
-                            if (df.Node.DisplayType == "0" || df.Node.DisplayType == "751") destPath += "/";
 
                             var sGateData = new SGateData()
                             {
-                                SourcePath = actualPath + (df.Node.DisplayType == "0" || df.Node.DisplayType == "751" ? "\\" : ""),
+                                SourcePath = actualPath.TrimEnd('\\') + "\\",
                                 DestinationPath = destPath,
                                 DRSCreatedBy = df.Node.CreatedBy,
                                 DRSCreatedDate = df.Node.CreationDate.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -1528,7 +1521,7 @@ namespace DownloadFilePlan
                     try
                     {
                         // For files, we only create the parent folder structure
-                        string[] pathParts = task.Node.Path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries);
+                        string[] pathParts = SplitPath(task.Node.Path);
                         string targetDirectory = GetParentFolderPath(pathParts, baseFilePath, db);
 
                         string fileName = CleanFileName(task.Node.Node.Name);
@@ -1732,8 +1725,7 @@ namespace DownloadFilePlan
 
                             var sGateData = new SGateData()
                             {
-                                // Replace '/' with '__' in SourcePath filename for cleaner paths
-                                SourcePath = filePath.Replace('/', '_') + (task.Node.Node.DisplayType == "0" || task.Node.Node.DisplayType == "751" ? "\\" : ""),
+                                SourcePath = filePath,
                                 DestinationPath = destPath,
                                 DRSCreatedBy = task.Node.Node.CreatedBy,
                                 DRSCreatedDate = task.Node.Node.CreationDate.ToString("yyyy-MM-dd HH:mm:ss"),
@@ -2069,13 +2061,13 @@ namespace DownloadFilePlan
             {
                 // Use CleanFilePath for folder segments (not CleanFileName, which is for document names)
                 // Folder segments should not contain path separators, but if they do, CleanFilePath will handle them
-                fullPath = Path.Combine(fullPath, CleanFilePath(pathParts[i]));
+                fullPath = Path.Combine(fullPath, CleanPathSegment(pathParts[i]));
             }
             // Use original path construction
             for (int i = 0; i < folderSegmentCount; i++)
             {
                 // Use CleanFilePath for folder segments (not CleanFileName, which is for document names)
-                targetDirectory = Path.Combine(targetDirectory, CleanFilePath(pathParts[i]));
+                targetDirectory = Path.Combine(targetDirectory, CleanPathSegment(pathParts[i]));
             }
 
             return targetDirectory;
@@ -2083,12 +2075,21 @@ namespace DownloadFilePlan
         public static string CleanFilePath(string filePath)
         {
             // Pattern includes common illegal path characters
-            // Note: We keep forward slash / and backslash \ since they are path separators
+            // Note: We should NOT replace forward slash / and backslash \ here 
+            // if we want to preserve the directory structure in the log paths.
             string pattern = @"[~#%&*{}<>?\|\""']";
             Regex regex = new Regex(pattern);
 
             // Replace illegal characters with underscore
             return regex.Replace(filePath, "_");
+        }
+        public static string CleanPathSegment(string segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment))
+                return string.Empty;
+
+            string normalized = segment.Replace('\\', '_').Replace('/', '_');
+            return CleanFilePath(normalized);
         }
         static string CleanFileName(string fileName)
         {
@@ -2171,85 +2172,32 @@ namespace DownloadFilePlan
         public static string SanitizePathForLogs(string path, string fileNameWithExt = "")
         {
             if (string.IsNullOrWhiteSpace(path))
-        return string.Empty;
+                return string.Empty;
 
-    // Fix for paths where document names contain "text/\text" which might be split incorrectly.
-    // Replace "/\" with "__" so it stays as one segment.
-    if (path.Contains("/\\"))
-    {
-        path = path.Replace("/\\", "__");
-    }
-
-    // Use SplitPath to get segments (handles both '>' and '\' separators correctly)
-    string[] pathParts = SplitPath(path);
+            // Use SplitPath to get segments (handles '>' separators correctly)
+            string[] pathParts = SplitPath(path);
 
             if (pathParts.Length == 0)
                 return string.Empty;
 
-            // Determine how many segments to include as folders
-            int folderCount = pathParts.Length;
-            
-            // If fileNameWithExt is provided, check if the last segment is the document name
-            if (!string.IsNullOrEmpty(fileNameWithExt))
-            {
-                string cleanedFileName = CleanFileName(fileNameWithExt);
-                string fileNameBase = Path.GetFileNameWithoutExtension(cleanedFileName);
-                string fileNameExt = Path.GetExtension(cleanedFileName);
-                string lastSegment = pathParts[pathParts.Length - 1];
-                
-                // Extract the actual filename part from last segment (after last / or \)
-                string lastSegmentFileName = lastSegment;
-                int lastSlash = Math.Max(lastSegment.LastIndexOf('/'), lastSegment.LastIndexOf('\\'));
-                if (lastSlash >= 0 && lastSlash < lastSegment.Length - 1)
-                {
-                    lastSegmentFileName = lastSegment.Substring(lastSlash + 1);
-                }
-                
-                // Clean the extracted filename for comparison
-                string lastSegmentCleaned = CleanFileName(lastSegmentFileName);
-                string lastSegmentBase = Path.GetFileNameWithoutExtension(lastSegmentCleaned);
-                
-                // Check if last segment contains the document name (multiple ways to match)
-                bool isDocumentName = 
-                    lastSegment.Contains(cleanedFileName) ||  // Full cleaned name in segment
-                    lastSegmentFileName.Contains(fileNameBase) ||  // Base name in filename part
-                    lastSegmentCleaned.Equals(cleanedFileName, StringComparison.OrdinalIgnoreCase) ||  // Exact match after cleaning
-                    (lastSegmentBase.Equals(fileNameBase, StringComparison.OrdinalIgnoreCase) && 
-                     Path.GetExtension(lastSegmentCleaned).Equals(fileNameExt, StringComparison.OrdinalIgnoreCase));  // Base + extension match
-                
-                if (isDocumentName)
-                {
-                    folderCount = pathParts.Length - 1; // Exclude last segment (document name)
-                }
-            }
-            else
-            {
-                // No fileName provided, assume last segment might be document name if it has an extension
-                if (pathParts.Length > 1)
-                {
-                    string lastSegment = pathParts[pathParts.Length - 1];
-                    // Check if last segment looks like a document name (has extension or contains / or \)
-                    if (lastSegment.Contains('.') && (lastSegment.Contains('/') || lastSegment.Contains('\\')))
-                    {
-                        folderCount = pathParts.Length - 1; // Exclude last segment (likely document name)
-                    }
-                }
-            }
+            // Determine if this is a file or folder path.
+            // For SGateData folder entries, fileNameWithExt is empty.
+            // For files, the last segment is the filename.
+            int folderCount = string.IsNullOrEmpty(fileNameWithExt) ? pathParts.Length : pathParts.Length - 1;
+            if (folderCount < 0) folderCount = 0;
 
-            // Take only folder segments (exclude document name segment)
+            // Clean each folder segment individually
             var folderSegments = pathParts.Take(folderCount)
                 .Select(s => CleanFolderSegment(s))
                 .Where(s => !string.IsNullOrEmpty(s));
-            
+
             // Join with '/' for SharePoint path format
             return string.Join("/", folderSegments);
         }
 
         private static string CleanFolderSegment(string segment)
         {
-            // Replace separators with underscore to prevent creating extra folders
-            string s = segment.Replace('/', '_').Replace('\\', '_');
-            return CleanFilePath(s);
+            return CleanPathSegment(segment);
         }
 
         private static string GetDestinationPath(string sanitizePath, string fileName, string sharePointUrl)
@@ -2279,75 +2227,28 @@ namespace DownloadFilePlan
             if (string.IsNullOrWhiteSpace(path))
                 return new string[0];
 
-            // OTCS path from fn_llpathwsg uses '>' as separator: Enterprise>zTest>DLFilePlan>Folder 1>Email Demo/\_18112024_171540_1.msg>
-            // If we split on '\', the backslash inside the document name would create a fake "Email Demo/" folder.
-            // So when the path contains '>', split only on '>' so the document name (which may contain / or \) stays one segment.
-            if (path.IndexOf('>') >= 0)
+
+            if (path.IndexOf('>') >= 0 && path.IndexOf('\\') < 0)
             {
-                var segments = path.Split(new[] { '>' }, StringSplitOptions.RemoveEmptyEntries)
+                const string placeholderLt = "\uE000";
+                const string placeholderGt = "\uE001";
+                string normalized = path.Replace("<<", placeholderLt).Replace(">>", placeholderGt);
+
+                var segments = normalized.Split(new[] { '>' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => s.Trim())
                     .Where(s => !string.IsNullOrEmpty(s))
+                    .Select(s => s.Replace(placeholderLt, "<<").Replace(placeholderGt, ">>"))
                     .ToArray();
                 return segments;
             }
 
             // Original logic: path uses '\' as separator (e.g. from other sources)
-            var result = new List<string>();
-            int startIndex = 0;
-            bool inBrackets = false;
-
-            for (int i = 0; i < path.Length; i++)
-            {
-                if (path[i] == '<')
-                {
-                    inBrackets = true;
-                    continue;
-                }
-                if (path[i] == '\\')
-                {
-                    if (inBrackets)
-                    {
-                        inBrackets = false;
-                        continue;
-                    }
-
-                    bool isProbablySeparator = true;
-
-                    if (i > 0 && i < path.Length - 1)
-                    {
-                        bool isPartOfOperator = false;
-
-                        if (i < path.Length - 1 && path[i + 1] == '=')
-                            isPartOfOperator = true;
-
-                        if (i > 0 && path[i - 1] == '<')
-                            isPartOfOperator = true;
-
-                        bool hasPreviousContent = i > 0 && !char.IsWhiteSpace(path[i - 1]);
-                        bool hasNextContent = i < path.Length - 1 && !char.IsWhiteSpace(path[i + 1]);
-
-                        isProbablySeparator = hasPreviousContent && hasNextContent && !isPartOfOperator;
-                    }
-
-                    if (isProbablySeparator)
-                    {
-                        if (i > startIndex)
-                        {
-                            var segment = path.Substring(startIndex, i - startIndex).Trim();
-                            result.Add(segment);
-                        }
-                        startIndex = i + 1;
-                    }
-                }
-            }
-
-            if (startIndex < path.Length)
-            {
-                string finalSegment = path.Substring(startIndex).Trim();
-                result.Add(finalSegment);
-            }
-
-            return result.ToArray();
+            // Preserve special characters like '<' and '>' in names; sanitize later per segment.
+            path = path.Replace("/\\", "__");
+            return path.Split(new[] { '\\' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(s => s.Trim())
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToArray();
         }
 
         private static string GetUniqueFilePathBeforWrite(string filePath)
@@ -3223,7 +3124,7 @@ namespace DownloadFilePlan
                 inFs.Read(IV, 0, lenIV);
                 // Use RSACryptoServiceProvider
                 // to decrypt the AES key.
-                byte[] KeyDecrypted = rsa.Decrypt(KeyEncrypted, false);
+                byte[] KeyDecrypted = rsa.Decrypt(KeyEncrypted, true);
 
                 // Decrypt the key.
                 var transform = aes.CreateDecryptor(KeyDecrypted, IV);

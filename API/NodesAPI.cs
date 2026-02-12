@@ -53,7 +53,7 @@ namespace DownloadFilePlan
             {
                 Trace.WriteLine("_GetCategoryByNodeID failed");
                 Trace.WriteLine(ex.StackTrace);
-                throw;
+                return new Dictionary<string, string>();
             } finally
             {
                 client.Dispose();
